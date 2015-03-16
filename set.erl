@@ -197,9 +197,6 @@ foldl([], _Fnc, Acc0) ->
   Acc0.
 
 
-%%  spraví spojenie dvoch množín
-%%union(Set1, Set2) when is_list(Set1), is_list(Set2) -> %% ak je v 1. mnozine vacsi prvok, tak si ho necham na neskor - celu mnozinu a pridam prvy prvok z druhej mnoziny
-%%[isin(Set1,X) or isin(Set2,X) or isin(Set2,Y) or isin(Set2,Y)  || X <- Set1, Y <- Set2].
 
 %%  spraví spojenie dvoch množín
 union(Set1, Set2) when is_list(Set1), is_list(Set2) -> %% ak je v 1. mnozine vacsi prvok, tak si ho necham na neskor - celu mnozinu a pridam prvy prvok z druhej mnoziny
@@ -222,42 +219,40 @@ p_union([], [], Acc) ->
   reverse(Acc).
 
 %% spraví prienik dvoch množín
-intersect(Set1, Set2) when is_list(Set1), is_list(Set2) ->
-  filter(Set1, fun(X) -> isin(Set2, X) end).
+%%intersect(Set1, Set2) when is_list(Set1), is_list(Set2) ->
+%%filter(Set1, fun(X) -> isin(Set2, X) end).
 
 %% spraví prienik dvoch množín
-%%intersect(Set1,Set2) when is_list(Set1), is_list(Set2) ->
-%%  reverse(p_intersect(Set1,Set2,[])).
-%% p_intersect([H1 | _] = Set1, [H2|R2],Acc) when is_integer(H1), is_integer(H2), H1 > H2 -> %% pripad kedy osekavam prvu mnozinu, je tam mensi prvok
-%%  p_intersect(Set1, R2,Acc);                                                                %% switch lebo to porastie
-%% p_intersect([H1 | R1], [H2 |_]=Set2,Acc) when is_integer(H1), is_integer(H2), H1 < H2 -> %% pripad kedy osekavam druhu mnozinu, je tam mensi prvok
-%%  p_intersect(R1, Set2,Acc);
-%% p_intersect([H1 | Set1], [H2 | Set2],Acc) when is_integer(H1), is_integer(H2) -> %% pripad kedy osekavam obe mnoziny a pridam H1 do vysledku
-%%  p_intersect(Set1, Set2,[H1|Acc]);
-%% _intersect([], _,Acc) ->
-%%  Acc;
-%%p_intersect(_, [],Acc) ->
-%%  Acc.
-
-%% spraví rozdiel množín Set1 - Set2
-diff(Set1, Set2) when is_list(Set1), is_list(Set2) ->
-  filter(Set1, fun(X) -> not isin(Set2, X) end).
+intersect(Set1,Set2) when is_list(Set1), is_list(Set2) ->
+reverse(p_intersect(Set1, Set2, [])).
+p_intersect([H1 | _] = Set1, [H2 | R2], Acc) when is_integer(H1), is_integer(H2), H1 > H2 -> %% pripad kedy osekavam prvu mnozinu, je tam mensi prvok
+  p_intersect(Set1, R2, Acc);                                                                %% switch lebo to porastie
+p_intersect([H1 | R1], [H2 | _] = Set2, Acc) when is_integer(H1), is_integer(H2), H1 < H2 -> %% pripad kedy osekavam druhu mnozinu, je tam mensi prvok
+  p_intersect(R1, Set2, Acc);
+p_intersect([H1 | Set1], [H2 | Set2], Acc) when is_integer(H1), is_integer(H2) -> %% pripad kedy osekavam obe mnoziny a pridam H1 do vysledku
+  p_intersect(Set1, Set2, [H1 | Acc]);
+p_intersect([], _, Acc) ->
+  Acc;
+p_intersect(_, [], Acc) ->
+  Acc.
 
 %% spraví rozdiel množín Set1 - Set2
 %%diff(Set1, Set2) when is_list(Set1), is_list(Set2) ->
-%%  reverse(p_diff(Set1,Set2,[])).
-%%p_diff([H1 | R1], [H2 | R2] ,Acc) when is_integer(H1), is_integer(H2), H1 > H2 -> %% odsekavam z prvej, je tam mensi prvok
-%%  p_diff(R1, R2, [H1|Acc]);
-%%p_diff([H1 | R1] , [H2 | _]=Set2,Acc) when is_integer(H1), is_integer(H2), H1 < H2 -> %% odsekavam z druhej, tam je mensi prvok
-%%  p_diff(R1, Set2,[H1|Acc]);
-%%p_diff([_ | R1], [_ | R2], Acc) ->
-%%  p_diff(R1, R2,Acc);
-%%p_diff([_|R1]=Set1, [],[_|R2]=Acc) ->
-%%  reverse(union(Set1,reverse(Acc)));
-%%p_diff(R1, [],[]=Acc) ->
-%%  reverse(R1);
-%%p_diff([], _,Acc) ->
-%%Acc.
+%%  filter(Set1, fun(X) -> not isin(Set2, X) end).
+
+%% spraví rozdiel množín Set1 - Set2
+diff(Set1, Set2) when is_list(Set1), is_list(Set2) ->
+  reverse(p_diff(Set1, Set2, [])).
+p_diff([H1 | R1], [H2 | R2], Acc) when is_integer(H1), is_integer(H2), H1 > H2 -> %% odsekavam z prvej, je tam mensi prvok
+  p_diff(R1, R2, [H1 | Acc]);
+p_diff([H1 | R1], [H2 | _] = Set2, Acc) when is_integer(H1), is_integer(H2), H1 < H2 -> %% odsekavam z druhej, tam je mensi prvok
+  p_diff(R1, Set2, [H1 | Acc]);
+p_diff([_ | R1], [_ | R2], Acc) ->
+  p_diff(R1, R2, Acc);
+p_diff( Set1, [], Acc) ->
+  reverse(union(Set1, reverse(Acc)));
+p_diff([], _, Acc) ->
+  Acc.
 
 reverse(List) ->
   reverse(List, []).
