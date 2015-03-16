@@ -5,8 +5,8 @@
 -record(io, {i, o}).
 
 -define(BIND_IO(F), #io{i = Value, o = Expected} = F()).
--define(BIND_IO(S1, F), #io{i = S1} = F()).
--define(BIND_IO(S1, S2, F), #io{i = S1, o = S2} = F()).
+-define(BIND_IO(S, F), #io{i = S} = F()).
+-define(BIND_IO(S, L, F), #io{i = S, o = L} = F()).
 -define(BIND_IO2(F), {#io{i = Set1, o = List1}, #io{i = Set2, o = List2}} = F()).
 -define(BIND_IO2(S1, S2, F), {#io{i = S1}, #io{i = S2}} = F()).
 -define(BIND_IO2(S1, S2, L1, L2, F), {#io{i = S1, o = L1}, #io{i = S2, o = L2}} = F()).
@@ -19,6 +19,7 @@
 -define(DELETE(S, E), ?SET_MODULE:delete(S, E)).
 -define(PREC(S, E), ?SET_MODULE:prec(S, E)).
 -define(SUCC(S, E), ?SET_MODULE:succ(S, E)).
+-define(INTERSECT(S1, S2), ?SET_MODULE:intersect(S1, S2)).
 -define(UNION(S1, S2), ?SET_MODULE:union(S1, S2)).
 -define(DIFF(S1, S2), ?SET_MODULE:diff(S1, S2)).
 -define(EQUALS(S1, S2), ?SET_MODULE:equals(S1, S2)).
@@ -348,6 +349,46 @@ succ_existing_element_at_the_end_of_set() ->
     ?_assertEqual(?NIL, ?SUCC(?TOSET([6, 7, 9, 42, 3912318301809]), 3912318301809))
   ]}.
 
+%%%%%%%%%%%%%%%%%
+%%% intersect %%%
+%%%%%%%%%%%%%%%%%
+
+intersect_test_() ->
+  {inparallel, [intersect_empty(), intersect_with_one_empty(), intersect_of_nonempty_with_distinct_elements(), intersect_of_nonempty_with_same_elements(), intersect_of_nonempty_with_some_elements_distinct()]}.
+
+intersect_empty() ->
+  EmptySet1 = emptySet(),
+  EmptySet2 = emptySet(),
+  {"Intersect of two empty sets must be empty set", ?_assertEqual([], ?LIST(?INTERSECT(EmptySet1, EmptySet2)))}.
+
+intersect_with_one_empty() ->
+  EmptySet = emptySet(),
+  ?BIND_IO(NonEmptySet, fun nonEmptySet/0),
+  {"Intersect of two sets from which one is empty must be empty set", [
+    ?_assertEqual([], ?LIST(?INTERSECT(EmptySet, NonEmptySet))),
+    ?_assertEqual([], ?LIST(?INTERSECT(NonEmptySet, EmptySet)))
+  ]}.
+
+intersect_of_nonempty_with_distinct_elements() ->
+  ?BIND_IO2(Set1, Set2, fun distinctNonEmptySets/0),
+  {"Intersect of two distinct sets must be empty set", [
+    ?_assertEqual([], ?LIST(?INTERSECT(Set1, Set2))),
+    ?_assertEqual([], ?LIST(?INTERSECT(Set2, Set1)))
+  ]}.
+
+intersect_of_nonempty_with_some_elements_distinct() ->
+  ?BIND_IO2(Set1, Subset1, _List1, SubsetList1, fun setAndNonEmptySubset/0),
+  ?BIND_IO2(Set2, Set3, fun distinctNonEmptySets/0),
+  {"Intersect of two sets having some of elements the in common should return the common elements", [
+    ?_assertEqual(SubsetList1, ?LIST(?INTERSECT(Set1, Subset1))),
+    ?_assertEqual(SubsetList1, ?LIST(?INTERSECT(Subset1, Set1))),
+    ?_assertEqual([-10, 8, 55], ?LIST(?INTERSECT(setWithElements(Set2, [-10, 8, 55]), setWithElements(Set3, [-10, 8, 55]))))
+  ]}.
+
+intersect_of_nonempty_with_same_elements() ->
+  ?BIND_IO(NonEmptySet1, Expected, fun nonEmptySet2/0),
+  ?BIND_IO(NonEmptySet2, fun nonEmptySet2/0),
+  {"Intersect of two sets with the same elements is a set with the same elements", ?_assertEqual(Expected, ?LIST(?INTERSECT(NonEmptySet1, NonEmptySet2)))}.
 
 %%%%%%%%%%%%%
 %%% union %%%
@@ -845,7 +886,8 @@ helpers_test_() ->
     test_ensureElementInOrderedList(),
     test_removeElementFromOrderedList(),
     test_listsDiff(),
-    test_listsProduct()
+    test_listsProduct(),
+    test_setWithElements()
   ]}.
 
 test_setWithoutElement() ->
@@ -915,6 +957,17 @@ test_listsProduct() ->
     ?_assertEqual([2, 3, 11, 12, 20, 21, 22, 30, 31], listsProduct([1, 2, 10, 11], [1, 10, 20], fun (A, B) -> A + B end))
   ].
 
+test_setWithElements() ->
+  [
+    ?_assertEqual([], ?LIST(setWithElements(?TOSET([]), []))),
+    ?_assertEqual([1, 2, 5], ?LIST(setWithElements(?TOSET([1, 2, 5]), []))),
+    ?_assertEqual([1, 2, 5], ?LIST(setWithElements(?TOSET([]), [1, 2, 5]))),
+    ?_assertEqual([1, 2, 5], ?LIST(setWithElements(?TOSET([1, 2, 5]), [1, 2, 5]))),
+    ?_assertEqual([1, 2, 3, 4, 5], ?LIST(setWithElements(?TOSET([1, 3, 5]), [2, 4]))),
+    ?_assertEqual([1, 2, 3, 4, 5], ?LIST(setWithElements(?TOSET([4, 5]), [1, 2, 3]))),
+    ?_assertEqual([1, 2, 3, 4, 5], ?LIST(setWithElements(?TOSET([1, 2, 3]), [4, 5])))
+  ].
+
 %%%%%%%%%%%%%%%%%%%%%%%%
 %%% HELPER FUNCTIONS %%%
 %%%%%%%%%%%%%%%%%%%%%%%%
@@ -960,6 +1013,9 @@ setWithoutElement(Set, Ele) ->
 
 setWithElement(Set, Ele) ->
   ?TOSET(ensureElementInOrderedList(?LIST(Set), Ele)).
+
+setWithElements(Set, Elements) ->
+  ?TOSET(?LIST(Set) ++ Elements).
 
 ensureElementInOrderedList(List, Ele) ->
   ordsets:to_list(ordsets:add_element(Ele,ordsets:from_list(List))).

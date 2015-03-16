@@ -1,6 +1,6 @@
 -module(set).
 -export([show/1, newSet/0, toList/1, toSet/1, insert/2, delete/2, prec/2, succ/2, equals/2, min/1, max/1, card/1]).
--export([diff/2, union/2, intersection/2]).
+-export([diff/2, union/2, intersect/2]).
 -export([isin/2, any/2, all/2, product/3, map/2, filter/2, foldl/3]).
 %% vytvorí prázdnu množinu
 newSet() ->
@@ -11,35 +11,41 @@ toList(Set) ->
   Set.
 
 %% vytvorí množinu z prvkov zoznamu List
-toSet([Ele | List]) when is_integer(Ele) ->
-  insert(toSet(List), Ele);
-toSet([Ele | List]) when not is_integer(Ele) ->
-  toSet(List);
-toSet([]) ->
-  [].
+toSet(List) when is_list(List) ->
+  p_toSet(List, []).
+
+p_toSet([Ele | List], Acc) when is_integer(Ele) ->
+  Acc1 = insert(Acc, Ele),
+  p_toSet(List, Acc1);
+p_toSet([Ele | List], Acc) when not is_integer(Ele) ->
+  p_toSet(List, Acc);
+p_toSet([], Acc) ->
+  Acc.
 
 %% do množiny Set pridá prvok Ele
-insert([H | Set], Ele) when is_integer(Ele), Ele > H ->
-  [H | insert(Set, Ele)];
-insert([H | _] = Set, Ele) when is_integer(Ele), Ele < H ->
-  [Ele | Set];
-insert([H | _] = Set, Ele) when is_integer(Ele), Ele == H ->
-  Set;
-insert([], Ele) when is_integer(Ele) ->
-  [Ele].
+
+insert(Set, Ele) when is_integer(Ele), is_list(Set) ->
+  reverse(p_insert(Set, Ele, [])).
+p_insert([H | Set], Ele, Acc) when Ele > H -> %%ideme doprava
+  p_insert(Set, Ele, [H | Acc]);
+p_insert([H | R], Ele, Acc) when Ele < H ->
+  p_insert(R, H, [Ele | Acc]);
+p_insert([_ | R], Ele, Acc) when Acc /= [] ->
+  p_insert(R, Ele, Acc);
+p_insert(Set, Ele, Acc) when Acc == [], Set == [] ->
+  reverse([Ele | Set]);
+p_insert(Set, _, Acc) when Acc == [], Set /= [] ->
+  reverse(Set);
+p_insert(_, Ele, Acc) ->
+  [Ele | Acc].
+
 
 %% z množiny Set odoberie prvok Ele
-delete([H | Set], Ele) when is_integer(Ele), Ele > H ->
-  [H | delete(Set, Ele)];
-delete([H | _] = Set, Ele) when is_integer(Ele), Ele < H ->
-  Set;
-delete([H | Set], Ele) when is_integer(Ele), Ele == H ->
-  Set;
-delete([], Ele) when is_integer(Ele) ->
-  [].
+delete(Set, Ele) when is_integer(Ele), is_list(Set) ->
+  filter(Set, fun(X) -> X /= Ele end).
 
 %% vráti prvok, ktorý sa v usporiadanej množine nachádza pred Ele
-%% todo, make it more pro
+
 prec([H | _], Ele) when is_integer(Ele), Ele < H ->
   nil;
 prec([H | Set], Ele) when is_integer(Ele), Ele > H ->
@@ -55,7 +61,7 @@ prec([], Ele) when is_integer(Ele) ->
   nil.
 
 %% vráti prvok, ktorý sa v usporiadanej množine nachádza za Ele
-%% todo, make it more pro
+
 succ([T], Ele) when is_integer(Ele), Ele == T ->
   nil;
 succ([T | Set], Ele) when is_integer(Ele), Ele == T, Set == [] ->
@@ -192,40 +198,73 @@ foldl([], _Fnc, Acc0) ->
 
 
 %%  spraví spojenie dvoch množín
-union([H1 | _] = Set1, [H2 | Set2]) when is_integer(H1), is_integer(H2), H1 > H2 -> %% ak je v 1. mnozine vacsi prvok, tak si ho necham na neskor - celu mnozinu a pridam prvy prvok z druhej mnoziny
-  [H2 | union(Set1, Set2)];
-union([H1 | Set1], [H2 | _] = Set2) when is_integer(H1), is_integer(H2), H1 < H2 -> %% ak je v 1. mnozine mensi prvok, tak ho pridam do vysledku, odrezem z 1. mnoziny, a druhu mnozinu pouzijem celu
-  [H1 | union(Set1, Set2)];
-union([H1 | Set1], [H2 | Set2]) when is_integer(H1), is_integer(H2), H1 == H2 -> %% ak mam rovnaky prvok - tak ho odrezem z oboch mnozin, pouzijem napr H1 -mozem aj H2
-  [H1 | union(Set1, Set2)];
-union([], Set) ->
+%%union(Set1, Set2) when is_list(Set1), is_list(Set2) -> %% ak je v 1. mnozine vacsi prvok, tak si ho necham na neskor - celu mnozinu a pridam prvy prvok z druhej mnoziny
+%%[isin(Set1,X) or isin(Set2,X) or isin(Set2,Y) or isin(Set2,Y)  || X <- Set1, Y <- Set2].
+
+%%  spraví spojenie dvoch množín
+union(Set1, Set2) when is_list(Set1), is_list(Set2) -> %% ak je v 1. mnozine vacsi prvok, tak si ho necham na neskor - celu mnozinu a pridam prvy prvok z druhej mnoziny
+  p_union(Set1, Set2, []).
+p_union([H1 | _] = Set1, [H2 | R2], Acc) when is_integer(H1), is_integer(H2), H1 > H2 -> %% ak je v 1. mnozine vacsi prvok, tak si ho necham na neskor - celu mnozinu a pridam prvy prvok z druhej mnoziny
+  p_union(Set1, R2, [H2 | Acc]);                                                          %% POZOR otocim listy pretoze predpokladam ze sa to moze opakovat
+p_union([H1 | R1], [H2 | _] = Set2, Acc) when is_integer(H1), is_integer(H2), H1 < H2 -> %% ak je v 1. mnozine mensi prvok, tak ho pridam do vysledku, odrezem z 1. mnoziny, a druhu mnozinu pouzijem celu
+  p_union(R1, Set2, [H1 | Acc]);
+p_union([H1 | Set1], [H2 | Set2], Acc) when is_integer(H1), is_integer(H2) -> %% ak mam rovnaky prvok - tak ho odrezem z oboch mnozin, pouzijem napr H1 -mozem aj H2
+  p_union(Set1, Set2, [H1 | Acc]);
+p_union([], Set, []) ->
   Set;
-union(Set, []) ->
-  Set.
+p_union(Set, [], []) ->
+  Set;
+p_union([H1 | R1] = Set, [], Acc) when Set /= [] ->
+  p_union(R1, [], [H1 | Acc]);
+p_union([], [H1 | R1] = Set, Acc) when Set /= [] ->
+  p_union(R1, [], [H1 | Acc]);
+p_union([], [], Acc) ->
+  reverse(Acc).
 
 %% spraví prienik dvoch množín
-intersection([H1 | _] = Set1, [H2 | Set2]) when is_integer(H1), is_integer(H2), H1 > H2 -> %% pripad kedy osekavam prvu mnozinu, je tam mensi prvok
-  intersection(Set1, Set2);
-intersection([H1 | Set1], [H2 | _] = Set2) when is_integer(H1), is_integer(H2), H1 < H2 -> %% pripad kedy osekavam druhu mnozinu, je tam mensi prvok
-  intersection(Set1, Set2);
-intersection([H1 | Set1], [H2 | Set2]) when is_integer(H1), is_integer(H2), H1 == H2 -> %% pripad kedy osekavam obe mnoziny
-  [H1 | intersection(Set1, Set2)];
-intersection([], _) ->
-  [];
-intersection(_, []) ->
-  [].
+intersect(Set1, Set2) when is_list(Set1), is_list(Set2) ->
+  filter(Set1, fun(X) -> isin(Set2, X) end).
+
+%% spraví prienik dvoch množín
+%%intersect(Set1,Set2) when is_list(Set1), is_list(Set2) ->
+%%  reverse(p_intersect(Set1,Set2,[])).
+%% p_intersect([H1 | _] = Set1, [H2|R2],Acc) when is_integer(H1), is_integer(H2), H1 > H2 -> %% pripad kedy osekavam prvu mnozinu, je tam mensi prvok
+%%  p_intersect(Set1, R2,Acc);                                                                %% switch lebo to porastie
+%% p_intersect([H1 | R1], [H2 |_]=Set2,Acc) when is_integer(H1), is_integer(H2), H1 < H2 -> %% pripad kedy osekavam druhu mnozinu, je tam mensi prvok
+%%  p_intersect(R1, Set2,Acc);
+%% p_intersect([H1 | Set1], [H2 | Set2],Acc) when is_integer(H1), is_integer(H2) -> %% pripad kedy osekavam obe mnoziny a pridam H1 do vysledku
+%%  p_intersect(Set1, Set2,[H1|Acc]);
+%% _intersect([], _,Acc) ->
+%%  Acc;
+%%p_intersect(_, [],Acc) ->
+%%  Acc.
 
 %% spraví rozdiel množín Set1 - Set2
-diff([H1 | R1], [H2 | _] = Set2) when is_integer(H1), is_integer(H2), H1 < H2 -> %% odsekavam z prvej, je tam mensi prvok
-  [H1 | diff(R1, Set2)];
-diff([H1 | _] = Set1, [H2 | R2]) when is_integer(H1), is_integer(H2), H1 > H2 -> %% odsekavam z druhej, tam je mensi prvok
-  diff(Set1, R2);
-diff([_ | R1], [_ | R2]) -> %% tuto mame pripad, kedy su tie prvky rovnake v obidvoch, takze odseknem z oboch
-  diff(R1, R2);
-diff(R1, []) ->
-  R1;
-diff([], _) ->
-  [].
+diff(Set1, Set2) when is_list(Set1), is_list(Set2) ->
+  filter(Set1, fun(X) -> not isin(Set2, X) end).
+
+%% spraví rozdiel množín Set1 - Set2
+%%diff(Set1, Set2) when is_list(Set1), is_list(Set2) ->
+%%  reverse(p_diff(Set1,Set2,[])).
+%%p_diff([H1 | R1], [H2 | R2] ,Acc) when is_integer(H1), is_integer(H2), H1 > H2 -> %% odsekavam z prvej, je tam mensi prvok
+%%  p_diff(R1, R2, [H1|Acc]);
+%%p_diff([H1 | R1] , [H2 | _]=Set2,Acc) when is_integer(H1), is_integer(H2), H1 < H2 -> %% odsekavam z druhej, tam je mensi prvok
+%%  p_diff(R1, Set2,[H1|Acc]);
+%%p_diff([_ | R1], [_ | R2], Acc) ->
+%%  p_diff(R1, R2,Acc);
+%%p_diff([_|R1]=Set1, [],[_|R2]=Acc) ->
+%%  reverse(union(Set1,reverse(Acc)));
+%%p_diff(R1, [],[]=Acc) ->
+%%  reverse(R1);
+%%p_diff([], _,Acc) ->
+%%Acc.
+
+reverse(List) ->
+  reverse(List, []).
+reverse([H | T], Acc) ->
+  reverse(T, [H | Acc]);
+reverse([], Acc) ->
+  Acc.
 
 
 
