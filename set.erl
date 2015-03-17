@@ -41,8 +41,10 @@ p_insert(_, Ele, Acc) ->
 
 
 %% z množiny Set odoberie prvok Ele
+%% pri tail call alebo body rekurzii vieme skoncit skor a naslednej spojit tie 2 mnoziny - ale proces spojenia 2 mnzoin, aj ked je spravne vhodne cez ++ , kde pridavam k prvemu prvku celu mnozinu,
+%% nebude efektivnejsi ako obycajny scan cez filter a nasledne vyhodenie prvku, ktory sa rovna Ele
 delete(Set, Ele) when is_integer(Ele), is_list(Set) ->
-  filter(Set, fun(X) -> X /= Ele end).
+ filter(Set, fun(X) -> X /= Ele end).
 
 %% vráti prvok, ktorý sa v usporiadanej množine nachádza pred Ele
 
