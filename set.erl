@@ -227,11 +227,11 @@ p_union([], [], Acc) ->
 %% spraví prienik dvoch množín
 intersect(Set1,Set2) when is_list(Set1), is_list(Set2) ->
 reverse(p_intersect(Set1, Set2, [])).
-p_intersect([H1 | _] = Set1, [H2 | R2], Acc) when is_integer(H1), is_integer(H2), H1 > H2 -> %% pripad kedy osekavam prvu mnozinu, je tam mensi prvok
-  p_intersect(Set1, R2, Acc);                                                                %% switch lebo to porastie
-p_intersect([H1 | R1], [H2 | _] = Set2, Acc) when is_integer(H1), is_integer(H2), H1 < H2 -> %% pripad kedy osekavam druhu mnozinu, je tam mensi prvok
+p_intersect([H1 | _] = Set1, [H2 | R2], Acc) when is_integer(H1), is_integer(H2), H1 > H2 ->
+  p_intersect(Set1, R2, Acc);
+p_intersect([H1 | R1], [H2 | _] = Set2, Acc) when is_integer(H1), is_integer(H2), H1 < H2 ->
   p_intersect(R1, Set2, Acc);
-p_intersect([H1 | Set1], [H2 | Set2], Acc) when is_integer(H1), is_integer(H2) -> %% pripad kedy osekavam obe mnoziny a pridam H1 do vysledku
+p_intersect([H1 | Set1], [H2 | Set2], Acc) when is_integer(H1), is_integer(H2) ->
   p_intersect(Set1, Set2, [H1 | Acc]);
 p_intersect([], _, Acc) ->
   Acc;
@@ -245,9 +245,9 @@ p_intersect(_, [], Acc) ->
 %% spraví rozdiel množín Set1 - Set2
 diff(Set1, Set2) when is_list(Set1), is_list(Set2) ->
   reverse(p_diff(Set1, Set2, [])).
-p_diff([H1 | R1], [H2 | R2], Acc) when is_integer(H1), is_integer(H2), H1 > H2 -> %% odsekavam z prvej, je tam mensi prvok
+p_diff([H1 | R1], [H2 | R2], Acc) when is_integer(H1), is_integer(H2), H1 > H2 ->
   p_diff(R1, R2, [H1 | Acc]);
-p_diff([H1 | R1], [H2 | _] = Set2, Acc) when is_integer(H1), is_integer(H2), H1 < H2 -> %% odsekavam z druhej, tam je mensi prvok
+p_diff([H1 | R1], [H2 | _] = Set2, Acc) when is_integer(H1), is_integer(H2), H1 < H2 ->
   p_diff(R1, Set2, [H1 | Acc]);
 p_diff([_ | R1], [_ | R2], Acc) ->
   p_diff(R1, R2, Acc);
